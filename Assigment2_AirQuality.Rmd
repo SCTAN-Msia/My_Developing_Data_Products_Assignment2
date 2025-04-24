@@ -1,0 +1,100 @@
+---
+title: "Assignment 2 - R Markdown Presentation & Plotly"
+author: "Tan Siu Ching"
+date: "2025-04-24"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## Introduction
+
+This presentation was created for the Peer-Graded Assignment of the Developing Data Products course.  
+
+It uses **Plotly** for interactive visualizations based on air quality data, synthetically generated to mimic real-world urban conditions. 
+
+A simulated dataset, including pollutants and weather parameters.  
+
+The presentation includes the date and fulfills the project rubric.
+
+
+## **About the Dataset**
+
+This dataset was **synthetically generated** to reflect realistic urban air quality conditions. 
+
+It includes pollutants such as CO, NOx, NO₂, O₃, SO₂, PM2.5, and PM10, as well as weather variables like temperature, humidity, wind speed, and pressure.
+
+### Limitations:
+- Synthetic, not from real sensors.
+- Not suitable for actual policy use.
+
+### Data Source:
+From Kaggle. View the dataset:  
+[https://www.kaggle.com/datasets/khushikyad001/air-quality-data]
+
+
+## **Scatter Plot: PM2.5 vs PM10**
+
+```{r load-data, message=FALSE}
+library(readr)
+library(dplyr)
+library(tidyr)
+library(plotly)
+
+# Load CSV directly from GitHub raw link
+url <- "https://raw.githubusercontent.com/SCTAN-Msia/My_Developing_Data_Products_Assignment2/main/AirQualityData.csv"
+air_data <- read_csv(url)
+
+# Categorize temperature into 3 groups
+air_data$temp_group <- cut(
+  air_data$Temperature,
+  breaks = quantile(air_data$Temperature, probs = c(0, 0.33, 0.66, 1), na.rm = TRUE),
+  labels = c("Low Temp", "Medium Temp", "High Temp"),
+  include.lowest = TRUE
+)
+
+# Reshape data for multiple pollutant comparison
+pollutant_data <- air_data %>%
+  select(`PM2.5`, PM10, NO2) %>%
+  pivot_longer(cols = everything(), names_to = "Pollutant", values_to = "Value")
+
+plot_ly(data = air_data,
+        x = ~`PM2.5`,
+        y = ~PM10,
+        type = 'scatter', mode = 'markers',
+        marker = list(size = 10, color = ~`PM2.5`, colorscale = 'Viridis', showscale = TRUE)) %>%
+  layout(title = "PM2.5 vs PM10 Air Pollution Levels",
+         xaxis = list(title = "PM2.5 (µg/m³)"),
+         yaxis = list(title = "PM10 (µg/m³)"))
+```
+## Box Plot: PM2.5 by Temperature Group
+```{r}
+
+plot_ly(data = air_data,
+        x = ~temp_group,
+        y = ~`PM2.5`,
+        type = "box",
+        color = ~temp_group,
+        boxpoints = "none",
+        jitter = 0.3,
+        pointpos = -1.8,
+        colors = "Set2") %>%
+  layout(title = "PM2.5 Distribution by Temperature Group",
+         xaxis = list(title = "Temperature Category"),
+         yaxis = list(title = "PM2.5 (µg/m³)"))
+```
+## Box Plot by Comparing the Multiple Pollutants (PM2.5, PM10, and NO2)
+```{r box-multipollutants-nodots, echo=FALSE}
+plot_ly(data = pollutant_data,
+        x = ~Pollutant,
+        y = ~Value,
+        type = "box",
+        color = ~Pollutant,
+        boxpoints = "none",  # ⛔ No individual dots
+        colors = "Set1") %>%
+  layout(title = "Pollutant Level Comparison: PM2.5, PM10, and NO2",
+         xaxis = list(title = "Pollutant"),
+         yaxis = list(title = "Concentration (µg/m³)"))
+```
